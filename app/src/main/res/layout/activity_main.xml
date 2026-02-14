@@ -4,17 +4,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="#0d1117"
     android:padding="20dp">
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/bg_card"
-        app:cardCornerRadius="12dp"
-        app:strokeColor="@color/border"
+        app:cardBackgroundColor="#161b22"
+        app:cardCornerRadius="16dp"
+        app:strokeColor="#30363d"
         app:strokeWidth="1dp"
-        app:cardElevation="10dp"
+        app:cardElevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -22,153 +22,161 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="30dp">
+            android:padding="24dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="20dp">
 
                 <androidx.cardview.widget.CardView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    app:cardBackgroundColor="@color/primary_blue"
-                    app:cardCornerRadius="18dp"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    app:cardBackgroundColor="#1f6feb"
+                    app:cardCornerRadius="16dp"
                     app:cardElevation="0dp">
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:text="🛡️"
                         android:gravity="center"
-                        android:textSize="40sp" />
+                        android:textSize="32sp" />
                 </androidx.cardview.widget.CardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sentinel-X"
-                    android:textColor="@color/text_primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="15dp"/>
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Secured by Ethereum/IPFS"
-                    android:textColor="@color/text_primary"
-                    android:background="@drawable/bg_tag"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp"
-                    android:textSize="12sp"
-                    android:layout_marginTop="5dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sentinel-X"
+                        android:textColor="#ffffff"
+                        android:textSize="20sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Official Release"
+                        android:textColor="#8b949e"
+                        android:textSize="14sp"
+                        android:layout_marginTop="2dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Verified by Ethereum"
+                        android:textColor="#3fb950"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="@color/border"
-                android:layout_marginVertical="20dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="This app requires blockchain integrity verification before installation."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:layout_marginBottom="15dp"/>
+                android:background="#30363d"
+                android:layout_marginBottom="20dp"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVerify"
                 android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:text="Verify Integrity on Chain"
-                android:textAllCaps="false"
-                android:textSize="15sp"
+                android:layout_height="56dp"
+                android:text="Verify &amp; Download"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/primary_green"
-                app:cornerRadius="6dp"/>
+                app:backgroundTint="#238636"
+                app:cornerRadius="8dp"/>
 
             <LinearLayout
                 android:id="@+id/statusBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_success"
                 android:orientation="vertical"
-                android:padding="12dp"
-                android:layout_marginTop="15dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                android:layout_marginTop="10dp">
 
                 <TextView
                     android:id="@+id/statusText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/success_text"
-                    android:fontFamily="monospace"
-                    android:textSize="13sp"/>
-            </LinearLayout>
+                    android:textColor="#3fb950"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="15dp"/>
 
-            <LinearLayout
-                android:id="@+id/progressLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="20dp"
-                android:visibility="gone">
-
-                <RelativeLayout
+                <LinearLayout
+                    android:id="@+id/progressLayout"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Downloading Encrypted APK..."
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"/>
-                    <TextView
-                        android:id="@+id/txtPercent"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="0%"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"/>
-                </RelativeLayout>
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"
-                    android:layout_marginTop="10dp"
-                    android:progressDrawable="@drawable/custom_progress"
-                    android:max="100" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/txtProgressSize"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Connecting..."
+                            android:textColor="#8b949e"
+                            android:textSize="12sp"/>
+
+                        <TextView
+                            android:id="@+id/txtPercent"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0%"
+                            android:textColor="#ffffff"
+                            android:textSize="12sp"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progressBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        app:trackCornerRadius="4dp"
+                        app:indicatorColor="#1f6feb"
+                        app:trackColor="#30363d"
+                        android:indeterminate="true" />
+
+                </LinearLayout>
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnInstall"
                 android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:text="Install Official APK"
-                android:textAllCaps="false"
-                android:textSize="15sp"
+                android:layout_height="56dp"
+                android:text="Install App"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/primary_blue"
-                app:cornerRadius="6dp"
-                android:layout_marginTop="15dp"
-                android:visibility="gone"/>
+                app:backgroundTint="#1f6feb"
+                app:cornerRadius="8dp"
+                android:visibility="gone"
+                android:layout_marginTop="15dp"/>
 
             <TextView
                 android:id="@+id/txtContract"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Contract: 0x...\nNetwork: Ethereum Sepolia Testnet"
+                android:text="Contract: 0x..."
                 android:textColor="#484f58"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:gravity="center"
-                android:layout_marginTop="25dp"/>
+                android:layout_marginTop="20dp"
+                android:fontFamily="monospace"/>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

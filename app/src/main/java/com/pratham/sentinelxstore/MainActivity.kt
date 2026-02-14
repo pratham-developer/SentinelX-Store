@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
@@ -28,6 +29,7 @@ import org.web3j.protocol.core.methods.request.Transaction
 import org.web3j.protocol.http.HttpService
 import java.io.File
 import java.io.FileOutputStream
+import java.text.DecimalFormat
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -59,17 +62,18 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_INSTALL_PERMISSION) {
+            // User came back from settings, try install again
             downloadedApkFile?.let { installApk(it) }
         }
     }
 
     private fun runPipeline() {
         binding.btnVerify.isEnabled = false
+        binding.btnVerify.alpha = 0.7f
         binding.btnVerify.text = "Verifying on Blockchain..."
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // 1. Connect to Blockchain
                 val web3j = Web3j.build(HttpService(RPC_URL))
                 val function = org.web3j.abi.datatypes.Function(
                     "getLatestRelease",
@@ -95,9 +99,10 @@ class MainActivity : AppCompatActivity() {
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    val errorMsg = if (e.message?.contains("empty") == true) "Contract not found/Empty response" else e.message
+                    val errorMsg = if (e.message?.contains("empty") == true) "Contract not found" else e.message
                     Toast.makeText(this@MainActivity, "Error: $errorMsg", Toast.LENGTH_LONG).show()
                     binding.btnVerify.isEnabled = true
+                    binding.btnVerify.alpha = 1.0f
                     binding.btnVerify.text = "Retry Verification"
                 }
             }
@@ -108,8 +113,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnVerify.visibility = View.GONE
         binding.statusBox.visibility = View.VISIBLE
         binding.statusText.text = HtmlCompat.fromHtml("✅ <strong>VERIFIED</strong><br>Release: $version", HtmlCompat.FROM_HTML_MODE_LEGACY)
-
         binding.progressLayout.visibility = View.VISIBLE
+
+        // Initial State: Indeterminate (Pulsing) until we know file size
+        binding.progressBar.isIndeterminate = true
+
         downloadApkInternal(cid)
     }
 
@@ -124,25 +132,48 @@ class MainActivity : AppCompatActivity() {
                 if (!response.isSuccessful) throw Exception("Download Failed: ${response.code}")
 
                 val body = response.body ?: throw Exception("Empty Body")
-                val totalSize = body.contentLength()
+                val totalSize = body.contentLength() // might be -1 if unknown
 
                 val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "SentinelX_Update.apk")
                 val output = FileOutputStream(file)
                 val input = body.byteStream()
 
-                val buffer = ByteArray(4096)
+                val buffer = ByteArray(8 * 1024) // 8KB Buffer
                 var bytesRead: Int
                 var downloadedSize: Long = 0
+                val df = DecimalFormat("0.0")
+
+                // Switch to DETERMINATE mode now that we are downloading
+                withContext(Dispatchers.Main) {
+                    if (totalSize > 0) {
+                        binding.progressBar.isIndeterminate = false
+                        binding.progressBar.max = 100
+                    }
+                }
 
                 while (input.read(buffer).also { bytesRead = it } != -1) {
                     output.write(buffer, 0, bytesRead)
                     downloadedSize += bytesRead
 
-                    if (totalSize > 0) {
-                        val percent = ((downloadedSize * 100) / totalSize).toInt()
-                        withContext(Dispatchers.Main) {
-                            binding.progressBar.progress = percent
+                    withContext(Dispatchers.Main) {
+                        if (totalSize > 0) {
+                            // Calculate Percentage
+                            val percent = ((downloadedSize * 100) / totalSize).toInt()
+
+                            // Smoothly update progress
+                            binding.progressBar.setProgressCompat(percent, true)
+
+                            // Update Text: "45%"
                             binding.txtPercent.text = "$percent%"
+
+                            // Update Size Text: "5.2MB / 15.0MB"
+                            val currentMB = df.format(downloadedSize / 1024f / 1024f)
+                            val totalMB = df.format(totalSize / 1024f / 1024f)
+                            binding.txtProgressSize.text = "$currentMB MB / $totalMB MB"
+                        } else {
+                            // If size unknown, just show downloaded amount
+                            val currentMB = df.format(downloadedSize / 1024f / 1024f)
+                            binding.txtProgressSize.text = "$currentMB MB"
                         }
                     }
                 }
@@ -155,7 +186,7 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     binding.progressLayout.visibility = View.GONE
                     binding.btnInstall.visibility = View.VISIBLE
-                    binding.btnInstall.text = "Install Now"
+                    // Trigger install flow immediately for better UX
                     checkPermissionAndInstall(file)
                 }
 
