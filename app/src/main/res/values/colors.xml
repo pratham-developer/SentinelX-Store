@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_main">#0d1117</color>
+    <color name="bg_card">#161b22</color>
+    <color name="border">#30363d</color>
+    <color name="text_primary">#c9d1d9</color>
+    <color name="text_secondary">#8b949e</color>
+    <color name="primary_green">#238636</color>
+    <color name="primary_blue">#1f6feb</color>
+    <color name="success_bg">#1A238636</color> <color name="success_text">#3fb950</color>
+</resources>
