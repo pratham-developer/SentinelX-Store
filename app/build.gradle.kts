@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
+        force("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
+    }
+}
+
 android {
     namespace = "com.pratham.sentinelxstore"
     compileSdk = 35
@@ -67,6 +76,10 @@ android {
 
 dependencies {
 
+    // CRITICAL FIX: Force Kotlin stdlib to match compiler version
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.10"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -75,14 +88,21 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
     // Web3j for Blockchain Interaction
     implementation("org.web3j:core:5.0.2")
 
-    // Coroutines for background tasks
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    // FIXED: Coroutines compatible with Kotlin 1.9.10
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     // Material Design
     implementation("com.google.android.material:material:1.13.0")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // FIXED: OkHttp compatible with Kotlin 1.9.10
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("androidx.activity:activity-ktx:1.9.0")
 }

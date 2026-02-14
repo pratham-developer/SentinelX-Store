@@ -2,18 +2,22 @@ package com.pratham.sentinelxstore
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.view.View
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
 import com.pratham.sentinelxstore.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
 import org.web3j.abi.TypeReference
@@ -22,6 +26,8 @@ import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.request.Transaction
 import org.web3j.protocol.http.HttpService
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,68 +36,67 @@ class MainActivity : AppCompatActivity() {
     // Configuration
     private val CONTRACT_ADDRESS = "0x6d5d41BbEb69924a23edc741477Af86bF2d872A2"
     private val RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
+    private var downloadedApkFile: File? = null
+
+    companion object {
+        private const val REQUEST_INSTALL_PERMISSION = 1001
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.txtContract.text = "Contract: ${CONTRACT_ADDRESS.substring(0, 10)}...\nNetwork: Sepolia Testnet"
 
-        // Set initial footer text
-        binding.txtContract.text = "Contract: ${CONTRACT_ADDRESS.substring(0, 10)}...\nNetwork: Ethereum Sepolia Testnet"
+        binding.btnVerify.setOnClickListener { runPipeline() }
 
-        binding.btnVerify.setOnClickListener {
-            runPipeline()
+        binding.btnInstall.setOnClickListener {
+            downloadedApkFile?.let { file -> checkPermissionAndInstall(file) }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_INSTALL_PERMISSION) {
+            downloadedApkFile?.let { installApk(it) }
         }
     }
 
     private fun runPipeline() {
-        // UI: Loading State
         binding.btnVerify.isEnabled = false
-        binding.btnVerify.text = "Connecting to Sepolia..."
+        binding.btnVerify.text = "Verifying on Blockchain..."
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // 1. Connect to Blockchain
                 val web3j = Web3j.build(HttpService(RPC_URL))
-
-                // 2. Prepare Contract Call (getLatestRelease)
-                // Solidity: function getLatestRelease() public view returns (string version, string cid)
                 val function = org.web3j.abi.datatypes.Function(
                     "getLatestRelease",
-                    listOf(), // Input parameters
-                    listOf(
-                        object : TypeReference<Utf8String>() {}, // Returns version
-                        object : TypeReference<Utf8String>() {}  // Returns CID
-                    )
+                    listOf(),
+                    listOf(object : TypeReference<Utf8String>() {}, object : TypeReference<Utf8String>() {})
                 )
-
                 val encodedFunction = FunctionEncoder.encode(function)
 
-                // 3. Execute Call
                 val response = web3j.ethCall(
                     Transaction.createEthCallTransaction(null, CONTRACT_ADDRESS, encodedFunction),
                     DefaultBlockParameterName.LATEST
                 ).send()
 
-                if (response.hasError()) {
-                    throw Exception(response.error.message)
-                }
+                if (response.hasError()) throw Exception(response.error.message)
 
-                // 4. Decode Response
                 val output = FunctionReturnDecoder.decode(response.value, function.outputParameters)
                 val version = output[0].value as String
                 val cid = output[1].value as String
 
-                // 5. Success UI (Switch to Main Thread)
                 withContext(Dispatchers.Main) {
                     showVerifiedState(version, cid)
                 }
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    val errorMsg = if (e.message?.contains("empty") == true) "Contract not found/Empty response" else e.message
+                    Toast.makeText(this@MainActivity, "Error: $errorMsg", Toast.LENGTH_LONG).show()
                     binding.btnVerify.isEnabled = true
                     binding.btnVerify.text = "Retry Verification"
                 }
@@ -100,45 +105,97 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showVerifiedState(version: String, cid: String) {
-        // Hide Verify Button
         binding.btnVerify.visibility = View.GONE
-
-        // Show Success Box
         binding.statusBox.visibility = View.VISIBLE
-        val successHtml = "✅ <strong>VERIFIED</strong><br>Release: $version<br>IPFS: ${cid.substring(0, 12)}..."
-        binding.statusText.text = HtmlCompat.fromHtml(successHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        binding.statusText.text = HtmlCompat.fromHtml("✅ <strong>VERIFIED</strong><br>Release: $version", HtmlCompat.FROM_HTML_MODE_LEGACY)
 
-        // Start Download Simulation
         binding.progressLayout.visibility = View.VISIBLE
-        simulateDownload(cid)
+        downloadApkInternal(cid)
     }
 
-    private fun simulateDownload(cid: String) {
-        lifecycleScope.launch {
-            var progress = 0
-            while (progress < 100) {
-                // Random increment to look like real network traffic
-                val increment = (Math.random() * 15).toInt()
-                progress += increment
-                if (progress > 100) progress = 100
-
-                binding.progressBar.progress = progress
-                binding.txtPercent.text = "$progress%"
-
-                delay(400) // Speed of simulation
-            }
-
-            // Download Complete
-            binding.progressLayout.visibility = View.GONE
-            binding.btnInstall.visibility = View.VISIBLE
-
-            // Set up real download link
-            binding.btnInstall.setOnClickListener {
+    private fun downloadApkInternal(cid: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
                 val url = "https://gateway.pinata.cloud/ipfs/$cid"
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.data = Uri.parse(url)
-                startActivity(intent)
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+
+                if (!response.isSuccessful) throw Exception("Download Failed: ${response.code}")
+
+                val body = response.body ?: throw Exception("Empty Body")
+                val totalSize = body.contentLength()
+
+                val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "SentinelX_Update.apk")
+                val output = FileOutputStream(file)
+                val input = body.byteStream()
+
+                val buffer = ByteArray(4096)
+                var bytesRead: Int
+                var downloadedSize: Long = 0
+
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    output.write(buffer, 0, bytesRead)
+                    downloadedSize += bytesRead
+
+                    if (totalSize > 0) {
+                        val percent = ((downloadedSize * 100) / totalSize).toInt()
+                        withContext(Dispatchers.Main) {
+                            binding.progressBar.progress = percent
+                            binding.txtPercent.text = "$percent%"
+                        }
+                    }
+                }
+
+                output.flush()
+                output.close()
+                input.close()
+
+                downloadedApkFile = file
+                withContext(Dispatchers.Main) {
+                    binding.progressLayout.visibility = View.GONE
+                    binding.btnInstall.visibility = View.VISIBLE
+                    binding.btnInstall.text = "Install Now"
+                    checkPermissionAndInstall(file)
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "Download Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
+        }
+    }
+
+    private fun checkPermissionAndInstall(file: File) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!packageManager.canRequestPackageInstalls()) {
+                Toast.makeText(this, "Please allow installation from Settings", Toast.LENGTH_LONG).show()
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                intent.data = Uri.parse("package:$packageName")
+                @Suppress("DEPRECATION")
+                startActivityForResult(intent, REQUEST_INSTALL_PERMISSION)
+                return
+            }
+        }
+        installApk(file)
+    }
+
+    private fun installApk(file: File) {
+        try {
+            val apkUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.provider",
+                file
+            )
+
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(apkUri, "application/vnd.android.package-archive")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Install Failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }
