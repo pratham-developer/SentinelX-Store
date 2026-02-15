@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
@@ -36,12 +37,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    // --- CONFIGURATION ---
     private val CONTRACT_ADDRESS = "0x41418ec13E70Ee833679cf0ad7e0ed53e6470C7e"
     private val RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
 
     private var downloadedApkFile: File? = null
-    private var verifiedChecksumFromChain: String? = null // Store the trusted hash
+    private var verifiedChecksumFromChain: String? = null
 
     companion object {
         private const val REQUEST_INSTALL_PERMISSION = 1001
@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        enableEdgeToEdge()
 
         binding.txtContract.text = "Contract: ${CONTRACT_ADDRESS.substring(0, 10)}...\nNetwork: Sepolia Testnet"
 
