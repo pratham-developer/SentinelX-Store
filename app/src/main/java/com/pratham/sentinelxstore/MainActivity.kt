@@ -34,12 +34,9 @@ import java.security.MessageDigest
 import java.text.DecimalFormat
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
-
     private val CONTRACT_ADDRESS = "0x41418ec13E70Ee833679cf0ad7e0ed53e6470C7e"
     private val RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com"
-
     private var downloadedApkFile: File? = null
     private var verifiedChecksumFromChain: String? = null
 
@@ -127,7 +124,7 @@ class MainActivity : AppCompatActivity() {
     private fun showVerifiedState(version: String, cid: String) {
         binding.btnVerify.visibility = View.GONE
         binding.statusBox.visibility = View.VISIBLE
-        binding.statusText.text = HtmlCompat.fromHtml("✅ <strong>VERIFIED</strong><br>Release: $version", HtmlCompat.FROM_HTML_MODE_LEGACY)
+        binding.statusText.text = HtmlCompat.fromHtml("<strong>VERIFIED</strong><br>Release: $version", HtmlCompat.FROM_HTML_MODE_LEGACY)
         binding.progressLayout.visibility = View.VISIBLE
 
         binding.progressBar.isIndeterminate = true
